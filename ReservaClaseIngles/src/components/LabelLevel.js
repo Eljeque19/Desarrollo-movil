@@ -1,22 +1,23 @@
 import React from "react";
-import {View, Text, StyleSheet} from "react-native"; 
-import {colors, spacing} from "../theme"
+import { View, Text, StyleSheet } from "react-native"; 
+import { colors, spacing } from "../theme";
 
-export default function LabelLevel({}) {
+export default function LabelLevel({ levelx }) {
     return (
-        <View Style={[styles.contenedor, {backgroundColor: colors.fondo}]}>
-            <Text style= {styles.texto}>{levelx} </Text>
+        <View style={[styles.contenedor, { backgroundColor: colors.fondo }]}>
+            <Text style={styles.texto}>{levelx}</Text>
         </View>
     )
 }
 
-const styles = styleSheet.create({
+const styles = StyleSheet.create({
     contenedor: {
-        alignSelf: "auto",
-        paddingvertical: 3,
-        paddinghorizontal: spacing.md,
-        borderRadius: full,
-        borderwidth: 1,
+        alignSelf: "auto", 
+        paddingVertical: 3, 
+        paddingHorizontal: spacing.md, 
+        borderRadius: 999, // 'full' no es nativo de React Native, 999 hace bordes muy redondos
+        borderWidth: 1, 
+        borderColor: colors.borde || '#ccc',
     },
-    texto: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3}
-})
+    texto: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 }
+});
