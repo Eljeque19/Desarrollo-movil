@@ -1,32 +1,47 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native"; 
 import { Ionicons } from "@expo/vector-icons";
 
 import NivelChip from "../components/NivelChip";
 import { colors, spacing } from "../theme";
 import { CLASES, NIVELES, formatearPrecio } from "../data/clases";
 
-export default function InicioScreen() {
-    // Empezamos con 'Todos' para que se muestren todas las clases al inicio
+export default function InicioScreen({ navigation }) {
     const [nivelActivo, setNivelActivo] = useState("Todos");
+    const [idsReservados, setIdsReservados] = useState([]);
 
-    const reservarClase = async (clase) => {
+    // Esta funcion lee la memoria de las reservas para saber que clases ya reservaste
+    const cargarReservas = async () => {
         try {
-            const reservasGuardadas = await AsyncStorage.getItem('@mis_reservas');
-            let listaReservas = reservasGuardadas ? JSON.parse(reservasGuardadas) : [];
-            listaReservas.push(clase);
-            await AsyncStorage.setItem('@mis_reservas', JSON.stringify(listaReservas));
-            Alert.alert("¡Éxito!", `Has reservado: ${clase.titulo}`);
+            const reservas = await AsyncStorage.getItem('@mis_reservas');
+            if (reservas) {
+                const lista = JSON.parse(reservas);
+                // Se hace con el id de las clases para que quede mas facil filtrarlas
+                setIdsReservados(lista.map(clase => clase.id));
+            } else {
+                setIdsReservados([]); // Si no hay reservas, la lista está vacía
+            }
         } catch (error) {
-            Alert.alert("Error", "No se pudo guardar la reserva");
+            console.log("Error leyendo reservas", error);
         }
     };
 
-    // Se filtra con TODOS pero sino se filtra con el nivel
-    const clasesFiltradas = nivelActivo === "Todos" 
+    // useFocusEffect ejecuta "cargarReservas" cada vez que miras esta pantalla
+    useFocusEffect(
+        useCallback(() => {
+            cargarReservas();
+        }, [])
+    );
+
+    // PASO 1: Filtramos por el nivel que tocaste o se muestran todos, depende cual seleccione
+    const clasesPorNivel = nivelActivo === "Todos" 
         ? CLASES 
         : CLASES.filter(c => c.nivel === nivelActivo);
+    
+    // PASO 2: dejamos las clases que no están en la lista de los id reservados
+    const clasesDisponibles = clasesPorNivel.filter(c => !idsReservados.includes(c.id));
 
     return (
         <View style={{ flex: 1, padding: spacing.md }}>
@@ -46,11 +61,17 @@ export default function InicioScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-                {clasesFiltradas.length === 0 ? (
-                    <Text style={{ marginTop: 20, color: colors.textoSuave }}>No hay clases para este nivel.</Text>
+                {clasesDisponibles.length === 0 ? (
+                    <Text style={{ marginTop: 20, color: colors.textoSuave, textAlign: 'center' }}>
+                        No hay clases nuevas disponibles para este nivel.
+                    </Text>
                 ) : (
-                    clasesFiltradas.map((clase) => (
-                        <View key={clase.id} style={{ backgroundColor: '#fff', borderRadius: 15, marginBottom: 15, overflow: 'hidden', borderWidth: 1, borderColor: '#eee' }}>
+                    clasesDisponibles.map((clase) => (
+                        <TouchableOpacity 
+                            key={clase.id} 
+                            onPress={() => navigation.navigate("Detalle", { clase })}
+                            style={{ backgroundColor: '#fff', borderRadius: 15, marginBottom: 15, overflow: 'hidden', borderWidth: 1, borderColor: '#eee' }}
+                        >
                             <Image 
                                 source={{ uri: clase.imagen }} 
                                 style={{ width: '100%', height: 120 }} 
@@ -68,20 +89,8 @@ export default function InicioScreen() {
                                     <Image source={{ uri: clase.profesor.foto }} style={{ width: 30, height: 30, borderRadius: 15, marginRight: 10 }} />
                                     <Text style={{ color: '#555', fontSize: 13 }}>{clase.profesor.nombre} ({clase.profesor.pais})</Text>
                                 </View>
-
-                                <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
-                                    <Ionicons name="time-outline" size={16} color="#555" />
-                                    <Text style={{ color: '#555', fontSize: 12, marginLeft: 5 }}>{clase.duracion} min  |  {clase.modalidad}</Text>
-                                </View>
-                                
-                                <TouchableOpacity 
-                                    onPress={() => reservarClase(clase)}
-                                    style={{ backgroundColor: colors.primario, padding: 12, borderRadius: 8, marginTop: 15, alignItems: 'center' }}
-                                >
-                                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>Agendar ({clase.cupos} cupos)</Text>
-                                </TouchableOpacity>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     ))
                 )}
                 <View style={{ height: 40 }} />
