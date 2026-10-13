@@ -1,19 +1,17 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import ClasesScreen from "../screens/ClasesScreen";
-
+import MainScreen from "../screens/MainScreen";
 
 const Stack = createNativeStackNavigator();
 
-export default  function ClasesStack() {
+export default function ClasesStack() {
     return(
         <Stack.Navigator>   
             <Stack.Screen
-                name  = "home"
-                component = {ClasesScreen}
-                options = {{headerShown: false}}
-                />
+                name="Main"
+                component={MainScreen}
+                options={{headerShown: false}}
+            />
         </Stack.Navigator>
     )
-
 }
